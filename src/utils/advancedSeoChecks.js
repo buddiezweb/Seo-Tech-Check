@@ -1,42 +1,30 @@
+// src/utils/advancedSeoChecks.js
 import { STATUS } from './constants';
 
 export async function runAdvancedChecks(data) {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(data.html, 'text/html');
+  const { doc, url, pageData, robots, sitemap, linkValidation, resources, performanceData, lighthouse } = data;
 
   return {
-    // Core Web Vitals from Lighthouse
-    performance: analyzePerformance(data),
-    
-    // Advanced content analysis
-    content: analyzeContent(doc, data),
-    
-    // Technical SEO
-    technical: analyzeTechnical(doc, data),
-    
-    // Structured Data validation
-    structuredData: analyzeStructuredData(doc, data),
-    
-    // Security analysis
-    security: analyzeSecurityHeaders(data),
-    
-    // Mobile-friendliness
-    mobile: analyzeMobileFriendliness(doc, data),
-    
-    // Summary and recommendations
-    summary: generateSummaryAndRecommendations(data)
+    performance: analyzePerformance(performanceData, lighthouse),
+    content: analyzeContent(doc, pageData),
+    technical: analyzeTechnical(doc, url),
+    structuredData: analyzeStructuredData(doc),
+    security: analyzeSecurityHeaders(url),
+    mobile: analyzeMobileFriendliness(doc),
+    links: analyzeLinks(linkValidation),
+    crawlability: analyzeCrawlability(robots, sitemap),
+    summary: generateSummary(data)
   };
 }
 
-function analyzePerformance(data) {
-  const lighthouse = data.lighthouse || {};
-  const metrics = data.performanceData?.metrics || {};
-  
-  return [
-    {
+function analyzePerformance(performanceData, lighthouse) {
+  const results = [];
+
+  if (lighthouse && lighthouse.performance !== undefined) {
+    results.push({
       name: 'Lighthouse Performance Score',
       status: lighthouse.performance >= 90 ? STATUS.PASS : lighthouse.performance >= 50 ? STATUS.WARN : STATUS.FAIL,
-      message: `Performance score: ${lighthouse.performance || 0}/100`,
+      message: `Performance score: ${lighthouse.performance}/100`,
       details: lighthouse.audits ? [
         `First Contentful Paint: ${lighthouse.audits['first-contentful-paint']?.displayValue || 'N/A'}`,
         `Largest Contentful Paint: ${lighthouse.audits['largest-contentful-paint']?.displayValue || 'N/A'}`,
@@ -44,100 +32,191 @@ function analyzePerformance(data) {
         `Cumulative Layout Shift: ${lighthouse.audits['cumulative-layout-shift']?.displayValue || 'N/A'}`,
         `Speed Index: ${lighthouse.audits['speed-index']?.displayValue || 'N/A'}`
       ] : ['Lighthouse data not available']
-    },
-    {
+    });
+  }
+
+  if (performanceData.loadTime) {
+    results.push({
       name: 'Page Load Time',
-      status: data.loadTime < 3000 ? STATUS.PASS : data.loadTime < 6000 ? STATUS.WARN : STATUS.FAIL,
-      message: `Page loaded in ${(data.loadTime / 1000).toFixed(2)}s`,
+      status: performanceData.loadTime < 3000 ? STATUS.PASS : performanceData.loadTime < 6000 ? STATUS.WARN : STATUS.FAIL,
+      message: `Page loaded in ${(performanceData.loadTime / 1000).toFixed(2)}s`,
       details: `Target: Under 3 seconds for optimal user experience`
-    }
-  ];
+    });
+  }
+
+  return results.length > 0 ? results : [{
+    name: 'Performance Analysis',
+    status: STATUS.WARN,
+    message: 'Performance data not available',
+    details: 'Unable to collect performance metrics'
+  }];
 }
 
-function analyzeContent(doc, data) {
+function analyzeContent(doc, pageData) {
+  const results = [];
+
+  // Title check
+  const title = doc.querySelector('title');
+  const titleText = title ? title.textContent.trim() : '';
+
+  if (!titleText) {
+    results.push({
+      name: 'Page Title',
+      status: STATUS.FAIL,
+      message: 'No title tag found',
+      details: 'Add a descriptive title tag to your page'
+    });
+  } else if (titleText.length < 30) {
+    results.push({
+      name: 'Page Title',
+      status: STATUS.WARN,
+      message: `Title too short (${titleText.length} chars)`,
+      details: `Current: "${titleText}". Recommended: 30-60 characters`
+    });
+  } else if (titleText.length > 60) {
+    results.push({
+      name: 'Page Title',
+      status: STATUS.WARN,
+      message: `Title too long (${titleText.length} chars)`,
+      details: `Current: "${titleText}". Recommended: 30-60 characters`
+    });
+  } else {
+    results.push({
+      name: 'Page Title',
+      status: STATUS.PASS,
+      message: `Title is optimized (${titleText.length} chars)`,
+      details: `"${titleText}"`
+    });
+  }
+
+  // Meta description check
+  const metaDesc = doc.querySelector('meta[name="description"]');
+  const descContent = metaDesc ? metaDesc.getAttribute('content') : '';
+
+  if (!descContent) {
+    results.push({
+      name: 'Meta Description',
+      status: STATUS.FAIL,
+      message: 'No meta description found',
+      details: 'Add a meta description to improve click-through rates'
+    });
+  } else if (descContent.length < 120) {
+    results.push({
+      name: 'Meta Description',
+      status: STATUS.WARN,
+      message: `Description too short (${descContent.length} chars)`,
+      details: `Recommended: 120-160 characters`
+    });
+  } else if (descContent.length > 160) {
+    results.push({
+      name: 'Meta Description',
+      status: STATUS.WARN,
+      message: `Description too long (${descContent.length} chars)`,
+      details: `Recommended: 120-160 characters`
+    });
+  } else {
+    results.push({
+      name: 'Meta Description',
+      status: STATUS.PASS,
+      message: `Description is optimized (${descContent.length} chars)`,
+      details: descContent
+    });
+  }
+
+  // Content analysis
   const bodyText = doc.body?.textContent || '';
   const wordCount = bodyText.split(/\s+/).filter(word => word.length > 0).length;
-  const paragraphs = doc.querySelectorAll('p');
-  const sentences = bodyText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  
-  // Calculate readability score (simplified Flesch Reading Ease)
-  const avgWordsPerSentence = sentences.length > 0 ? wordCount / sentences.length : 0;
-  const avgSyllablesPerWord = 1.5; // Simplified estimation
-  const readabilityScore = 206.835 - 1.015 * avgWordsPerSentence - 84.6 * avgSyllablesPerWord;
-  
-  return [
-    {
-      name: 'Content Length',
-      status: wordCount > 300 ? STATUS.PASS : wordCount > 150 ? STATUS.WARN : STATUS.FAIL,
-      message: `${wordCount} words found`,
-      details: [
-        `Paragraphs: ${paragraphs.length}`,
-        `Sentences: ${sentences.length}`,
-        `Average words per sentence: ${avgWordsPerSentence.toFixed(1)}`
-      ]
-    },
-    {
-      name: 'Readability Score',
-      status: readabilityScore > 60 ? STATUS.PASS : readabilityScore > 30 ? STATUS.WARN : STATUS.FAIL,
-      message: `Flesch Reading Ease: ${readabilityScore.toFixed(1)}/100`,
-      details: [
-        'Score interpretation:',
-        '90-100: Very easy to read',
-        '60-70: Easy to read',
-        '30-50: Fairly difficult',
-        '0-30: Very difficult'
-      ]
-    }
-  ];
-}
 
-function analyzeTechnical(doc, data) {
-  const results = [];
-  
-  // Validate and normalize URL
-  let urlObj;
-  try {
-    // Add protocol if missing
-    let normalizedUrl = data.url;
-    if (normalizedUrl && !normalizedUrl.match(/^https?:\/\//i)) {
-      normalizedUrl = 'https://' + normalizedUrl;
-    }
-    
-    urlObj = new URL(normalizedUrl);
-    
-    // Check SSL
-    const isHttps = urlObj.protocol === 'https:';
-    results.push({
-      name: 'SSL Certificate',
-      status: isHttps ? STATUS.PASS : STATUS.FAIL,
-      message: isHttps ? 'Site uses HTTPS' : 'Site is not using HTTPS',
-      details: isHttps ? 'SSL encryption protects user data and improves SEO rankings' : 'Google prioritizes HTTPS sites in search results'
-    });
+  results.push({
+    name: 'Content Length',
+    status: wordCount > 300 ? STATUS.PASS : wordCount > 150 ? STATUS.WARN : STATUS.FAIL,
+    message: `${wordCount} words found`,
+    details: wordCount < 300 ? 'Consider adding more content for better SEO' : 'Good content length'
+  });
 
-    // Check for www/non-www consistency
-    const hasWww = urlObj.hostname.startsWith('www.');
+  // Heading structure
+  const h1s = doc.querySelectorAll('h1');
+  if (h1s.length === 0) {
     results.push({
-      name: 'URL Consistency',
-      status: STATUS.PASS,
-      message: hasWww ? 'Using www version' : 'Using non-www version',
-      details: 'Ensure consistent use of www or non-www across your site'
-    });
-  } catch (error) {
-    results.push({
-      name: 'URL Analysis',
+      name: 'H1 Heading',
       status: STATUS.FAIL,
-      message: 'Invalid URL format',
-      details: 'Please ensure the URL is properly formatted (e.g., https://example.com)'
+      message: 'No H1 tag found',
+      details: 'Add an H1 tag to define the main topic of your page'
+    });
+  } else if (h1s.length > 1) {
+    results.push({
+      name: 'H1 Heading',
+      status: STATUS.WARN,
+      message: `Multiple H1 tags found (${h1s.length})`,
+      details: 'Use only one H1 tag per page'
+    });
+  } else {
+    results.push({
+      name: 'H1 Heading',
+      status: STATUS.PASS,
+      message: 'Single H1 tag found',
+      details: h1s[0].textContent.trim()
     });
   }
 
   return results;
 }
 
-function analyzeStructuredData(doc, data) {
+function analyzeTechnical(doc, url) {
+  const results = [];
+
+  // SSL check
+  const isHttps = url?.startsWith('https://');
+  results.push({
+    name: 'SSL Certificate',
+    status: isHttps ? STATUS.PASS : STATUS.FAIL,
+    message: isHttps ? 'Site uses HTTPS' : 'Site is not using HTTPS',
+    details: isHttps ? 'SSL encryption protects user data and improves SEO rankings' : 'Google prioritizes HTTPS sites in search results'
+  });
+
+  // Canonical URL
+  const canonical = doc.querySelector('link[rel="canonical"]');
+  if (canonical) {
+    results.push({
+      name: 'Canonical URL',
+      status: STATUS.PASS,
+      message: 'Canonical URL is set',
+      details: canonical.getAttribute('href')
+    });
+  } else {
+    results.push({
+      name: 'Canonical URL',
+      status: STATUS.WARN,
+      message: 'No canonical URL found',
+      details: 'Add a canonical URL to prevent duplicate content issues'
+    });
+  }
+
+  // Language declaration
+  const htmlLang = doc.documentElement.getAttribute('lang');
+  if (htmlLang) {
+    results.push({
+      name: 'Language Declaration',
+      status: STATUS.PASS,
+      message: `Language set to "${htmlLang}"`,
+      details: 'Helps search engines understand the content language'
+    });
+  } else {
+    results.push({
+      name: 'Language Declaration',
+      status: STATUS.WARN,
+      message: 'No language attribute found',
+      details: 'Add lang attribute to the html tag'
+    });
+  }
+
+  return results;
+}
+
+function analyzeStructuredData(doc) {
   const results = [];
   const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
-  
+
   if (scripts.length === 0) {
     results.push({
       name: 'Structured Data',
@@ -149,13 +228,13 @@ function analyzeStructuredData(doc, data) {
     scripts.forEach((script, index) => {
       try {
         const jsonData = JSON.parse(script.textContent);
-        const schemaType = jsonData['@type'];
-        
+        const schemaType = jsonData['@type'] || 'Unknown';
+
         results.push({
-          name: `Schema.org ${schemaType || 'Unknown'}`,
+          name: `Schema.org ${schemaType}`,
           status: STATUS.PASS,
-          message: `Valid ${schemaType || 'Unknown'} schema found`,
-          details: [`Schema type: ${schemaType || 'Unknown'}`]
+          message: `Valid ${schemaType} schema found`,
+          details: `Schema type: ${schemaType}`
         });
       } catch (e) {
         results.push({
@@ -171,66 +250,146 @@ function analyzeStructuredData(doc, data) {
   return results;
 }
 
-function analyzeSecurityHeaders(data) {
-  // In real implementation, you'd check response headers
-  return [
-    {
-      name: 'Security Headers',
-      status: STATUS.WARN,
-      message: 'Security headers check requires server response analysis',
-      details: [
-        'Recommended headers:',
-        'X-Content-Type-Options: nosniff',
-        'X-Frame-Options: SAMEORIGIN',
-        'Content-Security-Policy',
-        'Strict-Transport-Security'
-      ]
-    }
-  ];
-}
-
-function analyzeMobileFriendliness(doc, data) {
+function analyzeSecurityHeaders(url) {
   const results = [];
-  
-  // Check mobile viewport
-  const viewport = doc.querySelector('meta[name="viewport"]');
-  const hasProperViewport = viewport && viewport.content.includes('width=device-width');
-  
+
+  // Basic HTTPS check
+  if (url?.startsWith('https://')) {
+    results.push({
+      name: 'HTTPS Enabled',
+      status: STATUS.PASS,
+      message: 'Site is served over HTTPS',
+      details: 'Secure connection established'
+    });
+  } else {
+    results.push({
+      name: 'HTTPS Enabled',
+      status: STATUS.FAIL,
+      message: 'Site is not using HTTPS',
+      details: 'Implement SSL/TLS certificate for security'
+    });
+  }
+
+  // Note about security headers
   results.push({
-    name: 'Mobile Viewport',
-    status: hasProperViewport ? STATUS.PASS : STATUS.FAIL,
-    message: hasProperViewport ? 'Proper mobile viewport set' : 'Missing or incorrect viewport meta tag',
-    details: viewport ? `Current: ${viewport.content}` : 'Add <meta name="viewport" content="width=device-width, initial-scale=1">'
+    name: 'Security Headers',
+    status: STATUS.INFO,
+    message: 'Security headers check requires server response analysis',
+    details: [
+      'Recommended headers:',
+      '• X-Content-Type-Options: nosniff',
+      '• X-Frame-Options: SAMEORIGIN',
+      '• Content-Security-Policy',
+      '• Strict-Transport-Security'
+    ]
   });
 
   return results;
 }
 
-function generateSummaryAndRecommendations(data) {
-  const allChecks = Object.values(data).flat().filter(item => item && item.status);
-  const passCount = allChecks.filter(check => check.status === STATUS.PASS).length;
-  const warnCount = allChecks.filter(check => check.status === STATUS.WARN).length;
-  const failCount = allChecks.filter(check => check.status === STATUS.FAIL).length;
-  
-  const score = allChecks.length > 0 ? Math.round((passCount / allChecks.length) * 100) : 0;
-  
-  const recommendations = [];
-  
-  if (failCount > 0) {
-    recommendations.push(`Fix ${failCount} critical issues for better SEO`);
+function analyzeMobileFriendliness(doc) {
+  const results = [];
+
+  // Check viewport meta tag
+  const viewport = doc.querySelector('meta[name="viewport"]');
+  if (viewport) {
+    const content = viewport.getAttribute('content');
+    const hasWidth = content.includes('width=device-width');
+    const hasInitialScale = content.includes('initial-scale=1');
+
+    results.push({
+      name: 'Viewport Meta Tag',
+      status: hasWidth && hasInitialScale ? STATUS.PASS : STATUS.FAIL,
+      message: hasWidth && hasInitialScale ? 'Viewport is set correctly' : 'Viewport is not set correctly',
+      details: hasWidth && hasInitialScale ? 'Good for mobile responsiveness' : 'Add width=device-width and initial-scale=1'
+    });
+  } else {
+    results.push({
+      name: 'Viewport Meta Tag',
+      status: STATUS.FAIL,
+      message: 'No viewport meta tag found',
+      details: 'Add a viewport meta tag for mobile optimization'
+    });
   }
-  
-  if (!data.isHttps) {
-    recommendations.push('Implement HTTPS for security and SEO benefits');
+
+  return results;
+}
+
+function analyzeLinks(linkValidation) {
+  const results = [];
+
+  if (linkValidation && linkValidation.length > 0) {
+    linkValidation.forEach(link => {
+      results.push({
+        name: `Link: ${link.url}`,
+        status: link.status === 'valid' ? STATUS.PASS : STATUS.FAIL,
+        message: link.status === 'valid' ? 'Link is valid' : 'Link is broken',
+        details: link.status === 'valid' ? 'Good link' : 'Check the link'
+      });
+    });
+  } else {
+    results.push({
+      name: 'Links Validation',
+      status: STATUS.WARN,
+      message: 'No links to validate',
+      details: 'Consider adding links for validation'
+    });
   }
-  
-  return [{
-    name: 'Overall SEO Score',
-    status: score >= 80 ? STATUS.PASS : score >= 60 ? STATUS.WARN : STATUS.FAIL,
-    message: `${score}% - ${passCount} passed, ${warnCount} warnings, ${failCount} failed`,
-    details: [
-      'Top recommendations:',
-      ...recommendations
-    ]
-  }];
+
+  return results;
+}
+
+function analyzeCrawlability(robots, sitemap) {
+  const results = [];
+
+  // Robots.txt analysis
+  if (robots) {
+    results.push({
+      name: 'Robots.txt',
+      status: STATUS.PASS,
+      message: 'Robots.txt is accessible',
+      details: 'Good for SEO'
+    });
+  } else {
+    results.push({
+      name: 'Robots.txt',
+      status: STATUS.FAIL,
+      message: 'Robots.txt is not accessible',
+      details: 'Ensure robots.txt is present and accessible'
+    });
+  }
+
+  // Sitemap analysis
+  if (sitemap) {
+    results.push({
+      name: 'Sitemap',
+      status: STATUS.PASS,
+      message: 'Sitemap is accessible',
+      details: 'Good for SEO'
+    });
+  } else {
+    results.push({
+      name: 'Sitemap',
+      status: STATUS.FAIL,
+      message: 'Sitemap is not accessible',
+      details: 'Ensure sitemap is present and accessible'
+    });
+  }
+
+  return results;
+}
+
+function generateSummary(data) {
+  const summary = {
+    performance: data.performance,
+    content: data.content,
+    technical: data.technical,
+    structuredData: data.structuredData,
+    security: data.security,
+    mobile: data.mobile,
+    links: data.links,
+    crawlability: data.crawlability
+  };
+
+  return summary;
 }
