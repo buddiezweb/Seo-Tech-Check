@@ -1,3 +1,5 @@
+const helmet = require('helmet');
+const compression = require('compression');
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -23,10 +25,10 @@ mongoose.set('debug', true);
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://your-domain.com', 'https://your-cloudfront-url.cloudfront.net']
+    : ['http://localhost:3000'],
+  credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -36,6 +38,11 @@ app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet());
+  app.use(compression());
+}
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/seo-checker', {
