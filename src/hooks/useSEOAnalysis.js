@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { runAllChecks } from '../utils/seoChecks';
+import { runAllChecks } from '../utils/seoChecks'; // Ensure this utility function is correctly implemented
 
 function useSEOAnalysis() {
   const [results, setResults] = useState(null);
@@ -43,24 +43,9 @@ function useSEOAnalysis() {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
-      // Placeholder empty data arrays and objects for checks that require additional data:
-      const linksFromBackend = [];        // Links with HTTP status for broken link detection
-      const resourcesFromBackend = [];    // Resources info including headers for security checks
-      const sitemapData = null;            // Sitemap info; null means no sitemap data
-      const robotsData = null;             // Robots.txt data and crawl permission info
-      const allPagesData = [];             // Metadata for duplicate content detection
-
       // Run all SEO checks with available data
-      const checkResults = await runAllChecks(
-        doc,
-        url,
-        linksFromBackend,
-        resourcesFromBackend,
-        sitemapData,
-        robotsData,
-        allPagesData
-      );
-
+      const checkResults = await runAllChecks(doc, url);
+      console.log("Fetched Results:", checkResults); // Log the results for debugging
       setResults(checkResults);
     } catch (err) {
       setError(err.message || 'An error occurred while analyzing the URL');

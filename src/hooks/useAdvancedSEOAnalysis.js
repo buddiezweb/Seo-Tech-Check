@@ -1,84 +1,61 @@
 import { useState, useCallback } from 'react';
-import { runAdvancedChecks } from '../utils/advancedSeoChecks';
-import axios from 'axios';
+import { runAdvancedChecks } from '../utils/advancedSeoChecks'; // Ensure this utility function is correctly implemented
 
 function useAdvancedSEOAnalysis() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState({ step: '', percentage: 0 });
   const [error, setError] = useState(null);
 
-  const analyze = useCallback(async (url) => {
+  const analyze = useCallback(async (inputUrl) => {
     setLoading(true);
     setError(null);
     setResults(null);
 
     try {
-      // Step 1: Basic page analysis
-      setProgress({ step: 'Fetching page content...', percentage: 20 });
-      const pageResponse = await axios.post('/api/analyze', { url });
+      let urlString = inputUrl.trim();
 
-      if (!pageResponse.data) {
-        throw new Error('Failed to analyze page');
-      }
-      
-      const pageData = pageResponse.data;
-
-      // Check if user has reached their limit
-      if (pageResponse.status === 403) {
-        throw new Error(pageData.error);
+      // If protocol is missing, add https:// by default
+      if (!/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(urlString)) {
+        urlString = 'https://' + urlString;
       }
 
-      // Step 2: Check robots.txt
-      setProgress({ step: 'Checking robots.txt...', percentage: 40 });
-      const robotsResponse = await axios.get(`/api/robots?url=${encodeURIComponent(url)}`);
-      const robotsData = robotsResponse.data;
-
-      // Step 3: Check sitemap
-      setProgress({ step: 'Looking for sitemap...', percentage: 60 });
-      const sitemapResponse = await axios.get(`/api/sitemap?url=${encodeURIComponent(url)}`);
-      const sitemapData = sitemapResponse.data;
-
-      // Step 4: Check links (only if available in plan)
-      let linksData = [];
-      if (pageData.userPlan !== 'free' && pageData.links && pageData.links.length > 0) {
-        setProgress({ step: 'Validating links...', percentage: 80 });
-        try {
-          const linksResponse = await axios.post('/api/check-links', {
-            links: pageData.links.slice(0, 20)
-          });
-          linksData = linksResponse.data;
-        } catch (linkError) {
-          console.log('Link checking not available');
-        }
+      // Validate URL format with try/catch
+      let urlObj;
+      try {
+        urlObj = new URL(urlString);
+      } catch (_) {
+        throw new Error('Please enter a valid URL including protocol (http:// or https://)');
       }
 
-      // Step 5: Run comprehensive analysis
-      setProgress({ step: 'Running comprehensive analysis...', percentage: 90 });
-      const comprehensiveResults = await runAdvancedChecks({
-        ...pageData,
-        robots: robotsData,
-        sitemap: sitemapData,
-        linkValidation: linksData
-      });
+      const url = urlObj.href;
 
-      setProgress({ step: 'Analysis complete!', percentage: 100 });
-      setResults(comprehensiveResults);
+      // Fetch page HTML content via a free CORS proxy (allorigins)
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch the webpage. Please check the URL and try again.');
+      }
+
+      const data = await response.json();
+      const html = data.contents;
+
+      // Parse the HTML content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      // Run all SEO checks with available data
+      const checkResults = await runAdvancedChecks(doc, url);
+      console.log("Fetched Results:", checkResults); // Log the results for debugging
+      setResults(checkResults);
     } catch (err) {
-      if (err.response?.status === 403) {
-        setError(err.response.data.error || 'Usage limit reached');
-      } else if (err.response?.status === 401) {
-        setError('Please login to use this feature');
-      } else {
-        setError(err.message || 'An error occurred during analysis');
-      }
-      console.error('Analysis error:', err);
+      setError(err.message || 'An error occurred while analyzing the URL');
+      console.error('SEO Analysis Error:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return { analyze, results, loading, progress, error };
+  return { analyze, results, loading, error };
 }
 
 export default useAdvancedSEOAnalysis;
