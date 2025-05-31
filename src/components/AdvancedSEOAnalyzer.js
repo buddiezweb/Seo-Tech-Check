@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import useAdvancedSEOAnalysis from '../hooks/useAdvancedSEOAnalysis'; // Ensure this hook is implemented
+import useAdvancedSEOAnalysis from '../hooks/useAdvancedSEOAnalysis';
 
 const AdvancedSEOAnalyzer = () => {
   const [url, setUrl] = useState('');
@@ -30,13 +30,7 @@ const AdvancedSEOAnalyzer = () => {
       {results && (
         <div>
           <h2>Analysis Results</h2>
-          {/* Render tabs based on results */}
-          {results.tabs && results.tabs.map((tab, index) => (
-            <div key={index}>
-              <h3>{tab.title}</h3>
-              <p>{tab.content}</p>
-            </div>
-          ))}
+          <pre>{JSON.stringify(results, null, 2)}</pre>
         </div>
       )}
     </div>
