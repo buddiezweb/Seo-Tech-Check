@@ -156,13 +156,24 @@ app.post('/api/analyze', protect, async (req, res) => {
       resources: []
     };
     
-    // Monitor network requests
+    // Monitor network requests and track redirect chains
+    const redirectChains = new Map();
+
     page.on('response', response => {
       performanceData.resources.push({
         url: response.url(),
         status: response.status(),
         type: response.headers()['content-type'] || 'unknown'
       });
+
+      // Track redirects
+      const request = response.request();
+      const redirectChain = request.redirectChain();
+      if (redirectChain.length > 0) {
+        const chainUrls = redirectChain.map(r => r.url());
+        chainUrls.push(request.url());
+        redirectChains.set(request.url(), chainUrls);
+      }
     });
 
     // Navigate to the URL
@@ -264,6 +275,7 @@ app.post('/api/analyze', protect, async (req, res) => {
       performanceData,
       resources: performanceData.resources.slice(0, 100), // Limit resources
       links: links.slice(0, 50), // Limit links
+      redirectChains: Array.from(redirectChains.values()), // Add redirect chains info
       jsErrors: [],
       consoleMessages: [],
       lighthouse: lighthouseData,

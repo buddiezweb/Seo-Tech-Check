@@ -2,8 +2,7 @@
 import { useState, useCallback } from 'react';
 import { runAdvancedChecks } from '../utils/advancedSeoChecks';
 import axios from 'axios';
-import API_URL from '../config';
-
+import API_URL from '../config';6
 // Score calculation helper functions
 const calculateCategoryScore = (results = []) => {
   if (!Array.isArray(results) || results.length === 0) return 0;
@@ -23,24 +22,32 @@ const calculateCategoryScore = (results = []) => {
   return Math.round(total / results.length);
 };
 
-const validateResults = (results) => {
+  const validateResults = (results) => {
   if (!results || typeof results !== 'object') return false;
   
   // Check required properties
   const requiredProps = ['url', 'timestamp', 'summary', 'scores', 'data', 'overallScore'];
   if (!requiredProps.every(prop => prop in results)) return false;
   
+  // Define all expected metrics
+  const expectedMetrics = [
+    'performance', 'content', 'technical', 'mobile', 'security', 'structuredData',
+    'hreflang', 'mixedContent', 'socialMeta', 'excessiveRedirects', 'blockedResources',
+    'urlParameters', 'trailingSlash', 'robotsMeta', 'amp', 'sitemapEntries',
+    'structuredDataTypes', 'hreflangXDefault'
+  ];
+  
   // Validate scores
   const scores = results.scores;
   if (!scores || typeof scores !== 'object') return false;
-  if (!['performance', 'content', 'technical', 'mobile', 'security', 'structuredData'].every(metric => 
+  if (!expectedMetrics.every(metric => 
     typeof scores[metric] === 'number' && scores[metric] >= 0 && scores[metric] <= 100
   )) return false;
   
   // Validate summary sections
   const summary = results.summary;
   if (!summary || typeof summary !== 'object') return false;
-  if (!['performance', 'content', 'technical', 'mobile', 'security', 'structuredData'].every(section => 
+  if (!expectedMetrics.every(section => 
     Array.isArray(summary[section])
   )) return false;
   
@@ -68,6 +75,20 @@ function useAdvancedSEOAnalysis() {
       return;
     }
 
+    // Ensure URL has protocol
+    let validUrl = url;
+    if (!/^https?:\/\//i.test(url)) {
+      validUrl = `https://${url}`;
+    }
+
+    try {
+      // Test if URL is valid
+      new URL(validUrl);
+    } catch (e) {
+      setError('Please enter a valid URL');
+      return;
+    }
+
     try {
       // Reset states
       setLoading(true);
@@ -78,7 +99,7 @@ function useAdvancedSEOAnalysis() {
       // Step 1: Basic page analysis
       setProgress({ step: 'Fetching page content...', percentage: 20 });
       
-      const pageResponse = await api.post('/api/analyze', { url });
+      const pageResponse = await api.post('/api/analyze', { url: validUrl });
       
       if (!pageResponse.data || !pageResponse.data.success) {
         throw new Error(pageResponse.data?.error || 'Failed to analyze page');
@@ -88,12 +109,12 @@ function useAdvancedSEOAnalysis() {
 
       // Step 2: Check robots.txt
       setProgress({ step: 'Checking robots.txt...', percentage: 40 });
-      const robotsResponse = await api.get(`/api/robots?url=${encodeURIComponent(url)}`);
+      const robotsResponse = await api.get(`/api/robots?url=${encodeURIComponent(validUrl)}`);
       const robotsData = robotsResponse.data;
 
       // Step 3: Check sitemap
       setProgress({ step: 'Looking for sitemap...', percentage: 60 });
-      const sitemapResponse = await api.get(`/api/sitemap?url=${encodeURIComponent(url)}`);
+      const sitemapResponse = await api.get(`/api/sitemap?url=${encodeURIComponent(validUrl)}`);
       const sitemapData = sitemapResponse.data;
 
       // Step 4: Check links (only if available in plan)
@@ -128,7 +149,8 @@ function useAdvancedSEOAnalysis() {
           linkValidation: linksData,
           resources: pageData.resources || [],
           performanceData: pageData.performanceData || {},
-          lighthouse: pageData.lighthouse || {}
+          lighthouse: pageData.lighthouse || {},
+          redirectChains: pageData.redirectChains || []
         });
 
         setProgress({ step: 'Analysis complete!', percentage: 100 });
@@ -143,7 +165,19 @@ function useAdvancedSEOAnalysis() {
             technical: comprehensiveResults?.technical || [],
             mobile: comprehensiveResults?.mobile || [],
             security: comprehensiveResults?.security || [],
-            structuredData: comprehensiveResults?.structuredData || []
+            structuredData: comprehensiveResults?.structuredData || [],
+            hreflang: comprehensiveResults?.hreflang || [],
+            mixedContent: comprehensiveResults?.mixedContent || [],
+            socialMeta: comprehensiveResults?.socialMeta || [],
+            excessiveRedirects: comprehensiveResults?.excessiveRedirects || [],
+            blockedResources: comprehensiveResults?.blockedResources || [],
+            urlParameters: comprehensiveResults?.urlParameters || [],
+            trailingSlash: comprehensiveResults?.trailingSlash || [],
+            robotsMeta: comprehensiveResults?.robotsMeta || [],
+            amp: comprehensiveResults?.amp || [],
+            sitemapEntries: comprehensiveResults?.sitemapEntries || [],
+            structuredDataTypes: comprehensiveResults?.structuredDataTypes || [],
+            hreflangXDefault: comprehensiveResults?.hreflangXDefault || []
           },
           scores: {
             performance: calculateCategoryScore(comprehensiveResults?.performance),
@@ -151,7 +185,19 @@ function useAdvancedSEOAnalysis() {
             technical: calculateCategoryScore(comprehensiveResults?.technical),
             mobile: calculateCategoryScore(comprehensiveResults?.mobile),
             security: calculateCategoryScore(comprehensiveResults?.security),
-            structuredData: calculateCategoryScore(comprehensiveResults?.structuredData)
+            structuredData: calculateCategoryScore(comprehensiveResults?.structuredData),
+            hreflang: calculateCategoryScore(comprehensiveResults?.hreflang),
+            mixedContent: calculateCategoryScore(comprehensiveResults?.mixedContent),
+            socialMeta: calculateCategoryScore(comprehensiveResults?.socialMeta),
+            excessiveRedirects: calculateCategoryScore(comprehensiveResults?.excessiveRedirects),
+            blockedResources: calculateCategoryScore(comprehensiveResults?.blockedResources),
+            urlParameters: calculateCategoryScore(comprehensiveResults?.urlParameters),
+            trailingSlash: calculateCategoryScore(comprehensiveResults?.trailingSlash),
+            robotsMeta: calculateCategoryScore(comprehensiveResults?.robotsMeta),
+            amp: calculateCategoryScore(comprehensiveResults?.amp),
+            sitemapEntries: calculateCategoryScore(comprehensiveResults?.sitemapEntries),
+            structuredDataTypes: calculateCategoryScore(comprehensiveResults?.structuredDataTypes),
+            hreflangXDefault: calculateCategoryScore(comprehensiveResults?.hreflangXDefault)
           },
           data: {
             pageData: pageData || {},
@@ -162,14 +208,8 @@ function useAdvancedSEOAnalysis() {
         };
 
         // Calculate overall score including all categories
-        processedResults.overallScore = Math.round(
-          (processedResults.scores.performance +
-           processedResults.scores.content +
-           processedResults.scores.technical +
-           processedResults.scores.mobile +
-           processedResults.scores.security +
-           processedResults.scores.structuredData) / 6
-        );
+        const scoreSum = Object.values(processedResults.scores).reduce((sum, score) => sum + score, 0);
+        processedResults.overallScore = Math.round(scoreSum / Object.keys(processedResults.scores).length);
 
         // Validate the processed results
         if (!validateResults(processedResults)) {

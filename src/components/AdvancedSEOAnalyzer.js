@@ -263,7 +263,19 @@ const AdvancedSEOAnalyzer = ({ onAnalysisComplete }) => {
     'technical',
     'mobile',
     'security',
-    'structuredData'
+    'structuredData',
+    'hreflang',
+    'mixedContent',
+    'socialMeta',
+    'excessiveRedirects',
+    'blockedResources',
+    'urlParameters',
+    'trailingSlash',
+    'robotsMeta',
+    'amp',
+    'sitemapEntries',
+    'structuredDataTypes',
+    'hreflangXDefault'
   ];
 
   const renderResults = () => {
