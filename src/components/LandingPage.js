@@ -153,7 +153,7 @@ const PricingCard = styled.div`
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   text-align: center;
   position: relative;
-  ${props => props.featured && `
+  ${props => props.$featured && `
     transform: scale(1.05);
     border: 2px solid #667eea;
   `}
@@ -211,7 +211,7 @@ function LandingPage() {
   return (
     <Container>
       <Header>
-        <Logo>SEO Checker Pro</Logo>
+        <Logo>SEO Tech Check</Logo>
         <Nav>
           <NavButton to="/login">Login</NavButton>
           <NavButton to="/register" primary="true">Get Started</NavButton>
@@ -222,7 +222,7 @@ function LandingPage() {
         <HeroTitle>Analyze Your Website's SEO Performance</HeroTitle>
         <HeroSubtitle>
           Get comprehensive insights into your website's search engine optimization 
-          with our advanced SEO analysis tool. Check meta tags, performance, 
+          with SEO Tech Check's advanced analysis tool. Check meta tags, performance, 
           mobile-friendliness, and more.
         </HeroSubtitle>
         <CTAButton to="/register">Start Free Trial</CTAButton>
@@ -308,7 +308,7 @@ function LandingPage() {
               </NavButton>
             </PricingCard>
 
-            <PricingCard featured>
+            <PricingCard $featured>
               <PricingBadge>Most Popular</PricingBadge>
               <PricingTitle>Pro</PricingTitle>
               <PricingPrice>$29<span>/month</span></PricingPrice>

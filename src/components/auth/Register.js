@@ -200,6 +200,7 @@ function Register() {
               onChange={handleChange}
               placeholder="John Doe"
               required
+              autocomplete="name"
             />
           </InputGroup>
           
@@ -213,6 +214,7 @@ function Register() {
               onChange={handleChange}
               placeholder="your@email.com"
               required
+              autocomplete="email"
             />
           </InputGroup>
           
@@ -227,6 +229,7 @@ function Register() {
               placeholder="••••••••"
               required
               minLength="6"
+              autocomplete="new-password"
             />
           </InputGroup>
           
@@ -241,6 +244,7 @@ function Register() {
               placeholder="••••••••"
               required
               minLength="6"
+              autocomplete="new-password"
             />
           </InputGroup>
           

@@ -143,7 +143,9 @@ const sendTokenResponse = (user, statusCode, res) => {
   const options = {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
+    secure: true, // Required for cross-origin cookies
+    sameSite: 'none', // Required for cross-origin requests
+    path: '/' // Ensure cookie is available on all paths
   };
   
   res
@@ -156,8 +158,7 @@ const sendTokenResponse = (user, statusCode, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        plan: user.plan,
-        usage: user.usage
+        plan: user.plan
       }
     });
 };

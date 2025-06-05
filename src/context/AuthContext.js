@@ -1,3 +1,4 @@
+import API_URL from '../config';
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -5,7 +6,7 @@ import Cookies from 'js-cookie';
 const AuthContext = createContext({});
 
 // Configure axios defaults
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 axios.defaults.baseURL = API_URL;
 axios.defaults.withCredentials = true;
 

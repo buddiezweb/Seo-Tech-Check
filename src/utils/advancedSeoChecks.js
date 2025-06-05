@@ -380,16 +380,34 @@ function analyzeCrawlability(robots, sitemap) {
 }
 
 function generateSummary(data) {
-  const summary = {
-    performance: data.performance,
-    content: data.content,
-    technical: data.technical,
-    structuredData: data.structuredData,
-    security: data.security,
-    mobile: data.mobile,
-    links: data.links,
-    crawlability: data.crawlability
+  // Calculate overall scores
+  const performanceScore = calculateScore(analyzePerformance(data.performanceData, data.lighthouse));
+  const contentScore = calculateScore(analyzeContent(data.doc, data.pageData));
+  const technicalScore = calculateScore(analyzeTechnical(data.doc, data.url));
+  const mobileScore = calculateScore(analyzeMobileFriendliness(data.doc));
+  
+  return {
+    overallScore: Math.round((performanceScore + contentScore + technicalScore + mobileScore) / 4),
+    scores: {
+      performance: performanceScore,
+      content: contentScore,
+      technical: technicalScore,
+      mobile: mobileScore
+    },
+    timestamp: new Date().toISOString()
   };
+}
 
-  return summary;
+function calculateScore(results) {
+  if (!Array.isArray(results) || results.length === 0) return 0;
+  
+  const scoreMap = {
+    PASS: 100,
+    WARN: 50,
+    FAIL: 0,
+    INFO: 50
+  };
+  
+  const total = results.reduce((sum, result) => sum + (scoreMap[result.status] || 0), 0);
+  return Math.round(total / results.length);
 }

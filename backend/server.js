@@ -8,10 +8,11 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const robots = require('robots-parser');
 const { URL } = require('url');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, 'mongodb.env') });
 
 // Import middleware
-const { protect, checkUsageLimit } = require('./middleware/auth');
+const { protect } = require('./middleware/auth');
 const User = require('./models/User');
 const Analysis = require('./models/Analysis');
 
@@ -23,12 +24,12 @@ const app = express();
 // Enable mongoose debugging
 mongoose.set('debug', true);
 
-// Middleware
+// CORS Configuration - Allow all origins with credentials
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-domain.com', 'https://your-cloudfront-url.cloudfront.net']
-    : ['http://localhost:3000'],
-  credentials: true
+  origin: true, // Automatically reflects the request origin
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -45,7 +46,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/seo-checker', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
@@ -53,7 +54,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/seo-check
   console.log('📍 Database:', mongoose.connection.name);
 }).catch(err => {
   console.error('❌ MongoDB connection error:', err);
-  console.error('Make sure MongoDB is running on your system');
+  console.error('Make sure MongoDB is running on your system or your MONGODB_URI is correct');
   console.error('To install MongoDB:');
   console.error('- macOS: brew install mongodb-community');
   console.error('- Ubuntu: sudo apt-get install mongodb');
@@ -68,7 +69,7 @@ app.use('/api/auth', authRoutes);
 const cache = new Map();
 
 // Protected analysis endpoint
-app.post('/api/analyze', protect, checkUsageLimit, async (req, res) => {
+app.post('/api/analyze', protect, async (req, res) => {
   const { url } = req.body;
   
   if (!url) {
@@ -100,8 +101,8 @@ app.post('/api/analyze', protect, checkUsageLimit, async (req, res) => {
     if (cache.has(cacheKey)) {
       console.log('Returning cached result');
       
-      // Still increment usage for cached results
-      await req.user.incrementUsage();
+      // Removed usage increment
+      // await req.user.incrementUsage();
       
       const cachedResult = cache.get(cacheKey);
       return res.json({
@@ -116,6 +117,7 @@ app.post('/api/analyze', protect, checkUsageLimit, async (req, res) => {
     try {
       browser = await puppeteer.launch({
         headless: 'new',
+        executablePath: process.env.CHROME_BIN || undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -124,8 +126,10 @@ app.post('/api/analyze', protect, checkUsageLimit, async (req, res) => {
           '--no-first-run',
           '--no-zygote',
           '--single-process',
-          '--disable-extensions'
-        ]
+          '--disable-extensions',
+          '--disable-software-rasterizer'
+        ],
+        ignoreDefaultArgs: ['--disable-extensions'],
       });
     } catch (puppeteerError) {
       console.error('Puppeteer launch error:', puppeteerError);
@@ -267,13 +271,21 @@ app.post('/api/analyze', protect, checkUsageLimit, async (req, res) => {
       userPlan: req.user.plan
     };
 
+    // Calculate overall score from different metrics
+    const overallScore = Math.round(
+      (lighthouseData.performance +
+       lighthouseData.accessibility +
+       lighthouseData.seo +
+       (loadTime < 3000 ? 90 : loadTime < 6000 ? 70 : 50)) / 4
+    );
+
     // Save analysis to database
     try {
       await Analysis.create({
         user: req.user._id,
         url,
         results: result,
-        score: lighthouseData.seo,
+        score: overallScore,
         screenshot
       });
     } catch (dbError) {
@@ -281,8 +293,8 @@ app.post('/api/analyze', protect, checkUsageLimit, async (req, res) => {
       // Continue even if saving fails
     }
 
-    // Increment user usage
-    await req.user.incrementUsage();
+    // Removed usage increment
+    // await req.user.incrementUsage();
 
     // Cache the result
     cache.set(cacheKey, result);

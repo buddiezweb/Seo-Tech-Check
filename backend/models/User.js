@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      /^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$/,
       'Please provide a valid email'
     ]
   },
@@ -30,20 +30,6 @@ const userSchema = new mongoose.Schema({
     enum: ['free', 'pro', 'enterprise'],
     default: 'free'
   },
-  usage: {
-    checksToday: {
-      type: Number,
-      default: 0
-    },
-    lastCheckDate: {
-      type: Date,
-      default: Date.now
-    },
-    totalChecks: {
-      type: Number,
-      default: 0
-    }
-  },
   isEmailVerified: {
     type: Boolean,
     default: false
@@ -57,38 +43,6 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
-// Reset daily usage
-userSchema.methods.resetDailyUsage = function() {
-  const today = new Date();
-  const lastCheck = new Date(this.usage.lastCheckDate);
-  
-  if (today.toDateString() !== lastCheck.toDateString()) {
-    this.usage.checksToday = 0;
-    this.usage.lastCheckDate = today;
-  }
-};
-
-// Check if user can perform analysis
-userSchema.methods.canPerformCheck = function() {
-  this.resetDailyUsage();
-  
-  const limits = {
-    free: 5,
-    pro: 100,
-    enterprise: Infinity
-  };
-  
-  return this.usage.checksToday < limits[this.plan];
-};
-
-// Increment usage
-userSchema.methods.incrementUsage = async function() {
-  this.usage.checksToday += 1;
-  this.usage.totalChecks += 1;
-  this.usage.lastCheckDate = new Date();
-  await this.save();
-};
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
