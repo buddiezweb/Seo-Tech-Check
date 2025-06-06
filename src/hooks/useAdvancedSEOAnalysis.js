@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { runAdvancedChecks } from '../utils/advancedSeoChecks';
 import axios from 'axios';
-import API_URL from '../config';6
+import API_URL from '../config';
 // Score calculation helper functions
 const calculateCategoryScore = (results = []) => {
   if (!Array.isArray(results) || results.length === 0) return 0;

@@ -28,6 +28,28 @@ export async function runAdvancedChecks(data) {
   };
 }
 
+// Added missing analyzeHreflangXDefault function
+function analyzeHreflangXDefault(doc) {
+  const results = [];
+  const hreflangXDefault = doc.querySelector('link[rel="alternate"][hreflang="x-default"]');
+  if (!hreflangXDefault) {
+    results.push({
+      name: 'Hreflang x-default Tag',
+      status: 'WARN',
+      message: 'No hreflang x-default tag found',
+      details: 'Add hreflang x-default tag to specify default language/region'
+    });
+  } else {
+    results.push({
+      name: 'Hreflang x-default Tag',
+      status: 'PASS',
+      message: 'Hreflang x-default tag found',
+      details: hreflangXDefault.getAttribute('href')
+    });
+  }
+  return results;
+}
+
 function analyzePerformance(performanceData, lighthouse) {
   const results = [];
 

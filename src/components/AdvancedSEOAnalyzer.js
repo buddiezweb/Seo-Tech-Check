@@ -17,6 +17,7 @@ const Title = styled.h1`
   margin-bottom: 2rem;
   border-bottom: 2px solid #667eea;
   padding-bottom: 0.5rem;
+  text-align: center;
 `;
 
 const Form = styled.form`
@@ -85,11 +86,12 @@ const ProgressBarFill = styled.div`
 
 const ProgressText = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   font-size: 0.95rem;
   color: #4a5568;
   margin-bottom: 0.5rem;
   font-weight: 600;
+  gap: 1rem;
 `;
 
 const ErrorMessage = styled.div`
@@ -256,41 +258,50 @@ const AdvancedSEOAnalyzer = ({ onAnalysisComplete }) => {
     analyze(url, onAnalysisComplete);
   };
 
-  // Ensure these categories are always shown in the category scores and detailed results
-  const categoriesOrder = [
-    'performance',
-    'content',
-    'technical',
-    'mobile',
-    'security',
-    'structuredData',
-    'hreflang',
-    'mixedContent',
-    'socialMeta',
-    'excessiveRedirects',
-    'blockedResources',
-    'urlParameters',
-    'trailingSlash',
-    'robotsMeta',
-    'amp',
-    'sitemapEntries',
-    'structuredDataTypes',
-    'hreflangXDefault'
-  ];
+  // Group categories into 8 categories for top cards
+  const groupedCategories = {
+    Performance: ['performance', 'mobile'],
+    Content: ['content', 'structuredData'],
+    'Technical SEO': [
+      'technical', 'hreflang', 'mixedContent', 'excessiveRedirects', 'blockedResources',
+      'urlParameters', 'trailingSlash', 'robotsMeta', 'amp', 'sitemapEntries',
+      'structuredDataTypes', 'hreflangXDefault'
+    ],
+    Security: ['security'],
+    Crawlability: ['crawlability'],
+    'Social Media': ['socialMeta'],
+    Accessibility: [], // Add accessibility categories if any
+    Other: [] // Add any other categories if needed
+  };
+
+  // Flatten all categories for detailed sections
+  const allCategories = Object.values(groupedCategories).flat();
 
   const renderResults = () => {
     if (!results) return null;
 
-    // Prepare scores with placeholders for missing categories
+    // Prepare scores for all categories with placeholders
     const scores = {};
-    categoriesOrder.forEach(cat => {
+    allCategories.forEach(cat => {
       scores[cat] = results.scores && results.scores[cat] !== undefined ? results.scores[cat] : 'N/A';
     });
 
-    // Prepare summary with placeholders for missing categories
+    // Prepare summary for all categories with placeholders
     const summary = {};
-    categoriesOrder.forEach(cat => {
+    allCategories.forEach(cat => {
       summary[cat] = results.summary && results.summary[cat] ? results.summary[cat] : null;
+    });
+
+    // Calculate aggregated scores for grouped categories
+    const aggregatedScores = {};
+    Object.entries(groupedCategories).forEach(([groupName, cats]) => {
+      const validScores = cats
+        .map(cat => (typeof scores[cat] === 'number' ? scores[cat] : null))
+        .filter(score => score !== null);
+      const avgScore = validScores.length > 0
+        ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length)
+        : 'N/A';
+      aggregatedScores[groupName] = avgScore;
     });
 
     return (
@@ -303,15 +314,15 @@ const AdvancedSEOAnalyzer = ({ onAnalysisComplete }) => {
         </ScoreCard>
 
         <CategoryGrid>
-          {categoriesOrder.map(category => (
-            <CategoryCard key={category}>
-              <CategoryTitle>{category}</CategoryTitle>
-              <CategoryScore>{scores[category]}</CategoryScore>
+          {Object.entries(aggregatedScores).map(([groupName, score]) => (
+            <CategoryCard key={groupName}>
+              <CategoryTitle>{groupName}</CategoryTitle>
+              <CategoryScore>{score}</CategoryScore>
             </CategoryCard>
           ))}
         </CategoryGrid>
 
-        {categoriesOrder.map(category => (
+        {allCategories.map(category => (
           <DetailSection key={category}>
             <DetailTitle>{category} Analysis</DetailTitle>
             {summary[category] && Array.isArray(summary[category]) ? (
