@@ -14,10 +14,37 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
-    match: [
-      /^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$/,
-      'Please provide a valid email'
-    ]
+    validate: {
+      validator: function(value) {
+        // Check for basic email format
+        const basicEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!basicEmailRegex.test(value)) {
+          throw new Error('Invalid email format. Please use format: example@domain.com');
+        }
+
+        // Check for common issues
+        if (value.length > 254) {
+          throw new Error('Email is too long. Maximum length is 254 characters');
+        }
+
+        const [localPart, domain] = value.split('@');
+        
+        if (localPart.length > 64) {
+          throw new Error('Local part of email is too long. Maximum length is 64 characters');
+        }
+
+        if (domain.length > 255) {
+          throw new Error('Domain part of email is too long. Maximum length is 255 characters');
+        }
+
+        if (!/^[a-zA-Z0-9].*[a-zA-Z0-9]$/.test(localPart)) {
+          throw new Error('Email must start and end with a letter or number');
+        }
+
+        return true;
+      },
+      message: error => error.message
+    }
   },
   password: {
     type: String,

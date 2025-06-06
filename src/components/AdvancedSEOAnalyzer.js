@@ -261,11 +261,11 @@ const AdvancedSEOAnalyzer = ({ onAnalysisComplete }) => {
   // Group categories into 8 categories for top cards
   const groupedCategories = {
     Performance: ['performance', 'mobile'],
-    Content: ['content', 'structuredData'],
+    Content: ['content', 'structuredData', 'duplicateTitles', 'duplicateMetaDescriptions'],
     'Technical SEO': [
       'technical', 'hreflang', 'mixedContent', 'excessiveRedirects', 'blockedResources',
       'urlParameters', 'trailingSlash', 'robotsMeta', 'amp', 'sitemapEntries',
-      'structuredDataTypes', 'hreflangXDefault'
+      'structuredDataTypes', 'hreflangXDefault', 'noindexPages'
     ],
     Security: ['security'],
     Crawlability: ['crawlability'],

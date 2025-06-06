@@ -266,6 +266,14 @@ app.post('/api/analyze', protect, async (req, res) => {
       }
     };
 
+    // Calculate overall score from different metrics
+    const overallScore = Math.round(
+      (lighthouseData.performance +
+       lighthouseData.accessibility +
+       lighthouseData.seo +
+       (loadTime < 3000 ? 90 : loadTime < 6000 ? 70 : 50)) / 4
+    );
+
     const result = {
       url,
       html,
@@ -279,17 +287,16 @@ app.post('/api/analyze', protect, async (req, res) => {
       jsErrors: [],
       consoleMessages: [],
       lighthouse: lighthouseData,
+      summary: [
+        {
+          name: 'Overall SEO Score',
+          status: 'info',
+          message: `${overallScore}%`
+        }
+      ],
       timestamp: new Date().toISOString(),
       userPlan: req.user.plan
     };
-
-    // Calculate overall score from different metrics
-    const overallScore = Math.round(
-      (lighthouseData.performance +
-       lighthouseData.accessibility +
-       lighthouseData.seo +
-       (loadTime < 3000 ? 90 : loadTime < 6000 ? 70 : 50)) / 4
-    );
 
     // Save analysis to database
     try {

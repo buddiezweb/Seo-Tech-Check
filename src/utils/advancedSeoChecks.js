@@ -1,12 +1,12 @@
-import { STATUS } from './constants';
+const { STATUS } = require('./constants');
 
-export async function runAdvancedChecks(data) {
-  const { doc, url, pageData, robots, sitemap, linkValidation, resources, performanceData, lighthouse } = data;
+async function runAdvancedChecks(data) {
+  const { doc, url, pageData, robots, sitemap, linkValidation, resources, performanceData, lighthouse, allPages, redirectChains } = data;
 
   return {
     performance: analyzePerformance(performanceData, lighthouse),
     content: analyzeContent(doc, pageData),
-    technical: analyzeTechnical(doc, url),
+    technical: analyzeTechnical(doc, url, redirectChains),
     structuredData: analyzeStructuredData(doc),
     security: analyzeSecurityHeaders(url),
     mobile: analyzeMobileFriendliness(doc),
@@ -15,18 +15,150 @@ export async function runAdvancedChecks(data) {
     hreflang: analyzeHreflangTags(doc),
     mixedContent: analyzeMixedContent(doc),
     socialMeta: analyzeSocialMetaTags(doc),
-    excessiveRedirects: analyzeExcessiveRedirects(data.redirectChains),
+    excessiveRedirects: analyzeExcessiveRedirects(redirectChains),
     blockedResources: analyzeBlockedResources(resources),
     urlParameters: analyzeUrlParameters(url),
-    trailingSlash: analyzeTrailingSlashDuplication(data.allPages),
+    trailingSlash: analyzeTrailingSlashDuplication(allPages),
     robotsMeta: analyzeRobotsMetaTags(doc),
     amp: analyzeAmpTags(doc),
     sitemapEntries: analyzeSitemapEntries(sitemap),
     structuredDataTypes: analyzeStructuredDataTypes(doc),
     hreflangXDefault: analyzeHreflangXDefault(doc),
+    pageSizeAndDOM: analyzePageSizeAndDOM(resources, doc),
+    duplicateTitles: analyzeDuplicateTitles(allPages),
+    duplicateMetaDescriptions: analyzeDuplicateMetaDescriptions(allPages),
+    noindexPages: analyzeNoindexPages(doc),
     summary: generateSummary(data)
   };
 }
+
+// New function to detect duplicate page titles
+function analyzeDuplicateTitles(allPages = []) {
+  const results = [];
+
+  if (allPages.length === 0) {
+    results.push({
+      name: 'Duplicate Page Titles',
+      status: STATUS.INFO,
+      message: 'No pages data available to analyze duplicate titles'
+    });
+    return results;
+  }
+
+  const titleMap = {};
+  allPages.forEach(page => {
+    if (!page.title) return;
+    if (!titleMap[page.title]) {
+      titleMap[page.title] = [];
+    }
+    titleMap[page.title].push(page.url);
+  });
+
+  const duplicates = Object.entries(titleMap)
+    .filter(([, urls]) => urls.length > 1)
+    .map(([title, urls]) => ({ title, urls }));
+
+  if (duplicates.length === 0) {
+    results.push({
+      name: 'Duplicate Page Titles',
+      status: STATUS.PASS,
+      message: 'No duplicate page titles detected'
+    });
+  } else {
+    duplicates.forEach((dup, index) => {
+      results.push({
+        name: `Duplicate Page Titles Group ${index + 1}`,
+        status: STATUS.FAIL,
+        message: `Title "${dup.title}" found on ${dup.urls.length} pages`,
+        details: dup.urls
+      });
+    });
+  }
+
+  return results;
+}
+
+// New function to detect duplicate meta descriptions
+function analyzeDuplicateMetaDescriptions(allPages = []) {
+  const results = [];
+
+  if (allPages.length === 0) {
+    results.push({
+      name: 'Duplicate Meta Descriptions',
+      status: STATUS.INFO,
+      message: 'No pages data available to analyze duplicate meta descriptions'
+    });
+    return results;
+  }
+
+  const descMap = {};
+  allPages.forEach(page => {
+    if (!page.metaDescription) return;
+    if (!descMap[page.metaDescription]) {
+      descMap[page.metaDescription] = [];
+    }
+    descMap[page.metaDescription].push(page.url);
+  });
+
+  const duplicates = Object.entries(descMap)
+    .filter(([, urls]) => urls.length > 1)
+    .map(([desc, urls]) => ({ desc, urls }));
+
+  if (duplicates.length === 0) {
+    results.push({
+      name: 'Duplicate Meta Descriptions',
+      status: STATUS.PASS,
+      message: 'No duplicate meta descriptions detected'
+    });
+  } else {
+    duplicates.forEach((dup, index) => {
+      results.push({
+        name: `Duplicate Meta Descriptions Group ${index + 1}`,
+        status: STATUS.FAIL,
+        message: `Meta description "${dup.desc}" found on ${dup.urls.length} pages`,
+        details: dup.urls
+      });
+    });
+  }
+
+  return results;
+}
+
+// New function to detect noindex pages explicitly
+function analyzeNoindexPages(doc) {
+  const results = [];
+  const metaRobots = doc.querySelector('meta[name="robots"]');
+  if (!metaRobots) {
+    results.push({
+      name: 'Noindex Pages',
+      status: STATUS.PASS,
+      message: 'No noindex meta tag found (page is indexable)'
+    });
+  } else {
+    const content = metaRobots.getAttribute('content').toLowerCase();
+    if (content.includes('noindex')) {
+      results.push({
+        name: 'Noindex Pages',
+        status: STATUS.WARN,
+        message: 'Page has noindex directive in meta robots tag'
+      });
+    } else {
+      results.push({
+        name: 'Noindex Pages',
+        status: STATUS.PASS,
+        message: 'No noindex directive found in meta robots tag'
+      });
+    }
+  }
+  return results;
+}
+
+module.exports = {
+  runAdvancedChecks,
+  analyzeDuplicateTitles,
+  analyzeDuplicateMetaDescriptions,
+  analyzeNoindexPages
+};
 
 // Added missing analyzeHreflangXDefault function
 function analyzeHreflangXDefault(doc) {

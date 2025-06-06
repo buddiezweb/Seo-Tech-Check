@@ -177,7 +177,10 @@ function useAdvancedSEOAnalysis() {
             amp: comprehensiveResults?.amp || [],
             sitemapEntries: comprehensiveResults?.sitemapEntries || [],
             structuredDataTypes: comprehensiveResults?.structuredDataTypes || [],
-            hreflangXDefault: comprehensiveResults?.hreflangXDefault || []
+            hreflangXDefault: comprehensiveResults?.hreflangXDefault || [],
+            duplicateTitles: comprehensiveResults?.duplicateTitles || [],
+            duplicateMetaDescriptions: comprehensiveResults?.duplicateMetaDescriptions || [],
+            noindexPages: comprehensiveResults?.noindexPages || []
           },
           scores: {
             performance: calculateCategoryScore(comprehensiveResults?.performance),
@@ -197,7 +200,10 @@ function useAdvancedSEOAnalysis() {
             amp: calculateCategoryScore(comprehensiveResults?.amp),
             sitemapEntries: calculateCategoryScore(comprehensiveResults?.sitemapEntries),
             structuredDataTypes: calculateCategoryScore(comprehensiveResults?.structuredDataTypes),
-            hreflangXDefault: calculateCategoryScore(comprehensiveResults?.hreflangXDefault)
+            hreflangXDefault: calculateCategoryScore(comprehensiveResults?.hreflangXDefault),
+            duplicateTitles: calculateCategoryScore(comprehensiveResults?.duplicateTitles),
+            duplicateMetaDescriptions: calculateCategoryScore(comprehensiveResults?.duplicateMetaDescriptions),
+            noindexPages: calculateCategoryScore(comprehensiveResults?.noindexPages)
           },
           data: {
             pageData: pageData || {},
