@@ -152,7 +152,7 @@ function ResultsDisplay({ results, url }) {
   const score = calculateScore();
 
   const filteredResults = Object.fromEntries(
-    Object.entries(results).filter(([key]) => !['crawlability', 'socialMedia', 'accessibility', 'other'].includes(key))
+    Object.entries(results).filter(([key]) => !['crawlability', 'socialMedia', 'accessibility', 'other', 'indexability', 'performance', 'mobile'].includes(key))
   );
 
   return (
@@ -191,14 +191,14 @@ function ResultsDisplay({ results, url }) {
 
       {/* Removed Social Media section as per user request */}
 
-      <Section>
+      {/* <Section>
         <SectionTitle>Indexability</SectionTitle>
         <ChecksList>
           {results.indexability?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
-      </Section>
+      </Section> */}
       <Section>
         <SectionTitle>Structured Data</SectionTitle>
         <ChecksList>
@@ -207,22 +207,22 @@ function ResultsDisplay({ results, url }) {
           ))}
         </ChecksList>
       </Section>
-      <Section>
+      {/* <Section>
         <SectionTitle>Performance</SectionTitle>
         <ChecksList>
           {results.performance?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
-      </Section>
-      <Section>
+      </Section> */}
+      {/* <Section>
         <SectionTitle>Mobile Friendliness</SectionTitle>
         <ChecksList>
           {results.mobile?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
-      </Section>
+      </Section> */}
       <Section>
         <SectionTitle>Images</SectionTitle>
         <ChecksList>

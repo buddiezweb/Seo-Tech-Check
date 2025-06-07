@@ -29,15 +29,14 @@ function useSEOAnalysis() {
 
       const url = urlObj.href;
 
-      // Fetch page HTML content via a free CORS proxy (allorigins)
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl);
+      // Fetch page HTML content via scrape.do API to bypass Cloudflare
+      const scrapeDoUrl = `http://api.scrape.do?token=1048c4342ada4e9ca4f82c0288bff93c37902a5dff4&url=${encodeURIComponent(url)}`;
+      const response = await fetch(scrapeDoUrl);
       if (!response.ok) {
-        throw new Error('Failed to fetch the webpage. Please check the URL and try again.');
+        throw new Error('Failed to fetch the webpage via scrape.do. Please check the URL and try again.');
       }
 
-      const data = await response.json();
-      const html = data.contents;
+      const html = await response.text();
 
       // Parse the HTML content
       const parser = new DOMParser();
