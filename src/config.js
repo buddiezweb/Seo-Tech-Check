@@ -1,4 +1,4 @@
-const API_URL = process.env.REACT_APP_API_URL || 'https://ft8j6k-3001.csb.app';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 console.log('API URL configured:', API_URL);
 

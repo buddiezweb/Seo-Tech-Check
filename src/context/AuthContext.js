@@ -26,13 +26,24 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
-      const token = Cookies.get('token');
-      if (token && token !== 'none') {
-        const response = await axios.get('/api/auth/me');
+      // Do not read token from cookie directly as it is httpOnly
+      // Just call /api/auth/me to get user info
+      const response = await axios.get('/api/auth/me');
+      console.log('Auth check response:', response.data);
+      
+      if (response.data.success) {
         setUser(response.data.data);
+      } else {
+        console.error('Auth check failed:', response.data.error);
+        setUser(null);
       }
     } catch (err) {
-      console.log('Not authenticated');
+      console.error('Auth check error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -88,15 +99,40 @@ export const AuthProvider = ({ children }) => {
       console.log('Login response:', response.data);
       
       if (response.data.success) {
+        // Store token in cookie
+        // Removed manual cookie set to rely on backend cookie
+        // if (response.data.token) {
+        //   console.log('Setting token cookie...');
+        //   Cookies.set('token', response.data.token, {
+        //     expires: 7, // 7 days
+        //     path: '/',
+        //     sameSite: 'Lax',
+        //     secure: process.env.NODE_ENV === 'production'
+        //   });
+        //   // Set Authorization header
+        //   axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        // }
+        
+        // Set Authorization header from token
+        if (response.data.token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        }
+        
         setUser(response.data.user);
         return { success: true };
       } else {
         throw new Error(response.data.error || 'Login failed');
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('Login error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
       const errorMsg = err.response?.data?.error || 'Login failed';
       setError(errorMsg);
+      Cookies.remove('token');
+      delete axios.defaults.headers.common['Authorization'];
       return { success: false, error: errorMsg };
     }
   };
@@ -105,9 +141,19 @@ export const AuthProvider = ({ children }) => {
     try {
       await axios.get('/api/auth/logout');
       setUser(null);
-      Cookies.remove('token');
+      Cookies.remove('token', { path: '/' });
+      delete axios.defaults.headers.common['Authorization'];
+      console.log('Logged out successfully');
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error('Logout error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      // Still clear everything even if the API call fails
+      setUser(null);
+      Cookies.remove('token', { path: '/' });
+      delete axios.defaults.headers.common['Authorization'];
     }
   };
 

@@ -267,11 +267,7 @@ const AdvancedSEOAnalyzer = ({ onAnalysisComplete }) => {
       'urlParameters', 'trailingSlash', 'robotsMeta', 'amp', 'sitemapEntries',
       'structuredDataTypes', 'hreflangXDefault', 'noindexPages'
     ],
-    Security: ['security'],
-    Crawlability: ['crawlability'],
-    'Social Media': ['socialMeta'],
-    Accessibility: [], // Add accessibility categories if any
-    Other: [] // Add any other categories if needed
+    Security: ['security']
   };
 
   // Flatten all categories for detailed sections

@@ -237,7 +237,7 @@ const sendTokenResponse = (user, statusCode, res) => {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', // Required for cross-origin cookies in production
-    sameSite: 'none', // Required for cross-origin requests
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' in development
     path: '/' // Ensure cookie is available on all paths
   };
   

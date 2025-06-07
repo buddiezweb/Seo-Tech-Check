@@ -100,13 +100,13 @@ const WelcomeText = styled.p`
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   useEffect(() => {
-    // Check if user is authenticated
-    if (!user) {
+    // Check if user is authenticated and loading is complete
+    if (!loading && !user) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleLogout = async () => {
     await logout();
