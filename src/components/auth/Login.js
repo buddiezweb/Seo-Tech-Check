@@ -158,6 +158,7 @@ function Login() {
               onChange={handleChange}
               placeholder="your@email.com"
               required
+              autoComplete="email"
             />
           </InputGroup>
           
@@ -171,6 +172,7 @@ function Login() {
               onChange={handleChange}
               placeholder="••••••••"
               required
+              autoComplete="current-password"
             />
           </InputGroup>
           

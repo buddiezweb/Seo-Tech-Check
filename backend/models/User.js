@@ -14,10 +14,37 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Please provide a valid email'
-    ]
+    validate: {
+      validator: function(value) {
+        // Check for basic email format
+        const basicEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!basicEmailRegex.test(value)) {
+          throw new Error('Invalid email format. Please use format: example@domain.com');
+        }
+
+        // Check for common issues
+        if (value.length > 254) {
+          throw new Error('Email is too long. Maximum length is 254 characters');
+        }
+
+        const [localPart, domain] = value.split('@');
+        
+        if (localPart.length > 64) {
+          throw new Error('Local part of email is too long. Maximum length is 64 characters');
+        }
+
+        if (domain.length > 255) {
+          throw new Error('Domain part of email is too long. Maximum length is 255 characters');
+        }
+
+        if (!/^[a-zA-Z0-9].*[a-zA-Z0-9]$/.test(localPart)) {
+          throw new Error('Email must start and end with a letter or number');
+        }
+
+        return true;
+      },
+      message: error => error.message
+    }
   },
   password: {
     type: String,
@@ -29,20 +56,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['free', 'pro', 'enterprise'],
     default: 'free'
-  },
-  usage: {
-    checksToday: {
-      type: Number,
-      default: 0
-    },
-    lastCheckDate: {
-      type: Date,
-      default: Date.now
-    },
-    totalChecks: {
-      type: Number,
-      default: 0
-    }
   },
   isEmailVerified: {
     type: Boolean,
@@ -57,38 +70,6 @@ const userSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
-// Reset daily usage
-userSchema.methods.resetDailyUsage = function() {
-  const today = new Date();
-  const lastCheck = new Date(this.usage.lastCheckDate);
-  
-  if (today.toDateString() !== lastCheck.toDateString()) {
-    this.usage.checksToday = 0;
-    this.usage.lastCheckDate = today;
-  }
-};
-
-// Check if user can perform analysis
-userSchema.methods.canPerformCheck = function() {
-  this.resetDailyUsage();
-  
-  const limits = {
-    free: 5,
-    pro: 100,
-    enterprise: Infinity
-  };
-  
-  return this.usage.checksToday < limits[this.plan];
-};
-
-// Increment usage
-userSchema.methods.incrementUsage = async function() {
-  this.usage.checksToday += 1;
-  this.usage.totalChecks += 1;
-  this.usage.lastCheckDate = new Date();
-  await this.save();
-};
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import SEOAnalyzer from './SEOAnalyzer';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -133,77 +134,22 @@ const FeatureDescription = styled.p`
   line-height: 1.6;
 `;
 
-const Pricing = styled.section`
-  padding: 4rem 2rem;
-  background: #f7fafc;
-`;
-
-const PricingGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 2rem;
-  max-width: 1000px;
-  margin: 0 auto;
-`;
-
-const PricingCard = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  position: relative;
-  ${props => props.featured && `
-    transform: scale(1.05);
-    border: 2px solid #667eea;
-  `}
-`;
-
-const PricingBadge = styled.div`
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #667eea;
+const Footer = styled.footer`
+  background: #2d3748;
   color: white;
-  padding: 0.25rem 1rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  margin-top: 2rem;
 `;
 
-const PricingTitle = styled.h4`
-  font-size: 1.5rem;
-  color: #2d3748;
-  margin-bottom: 0.5rem;
-`;
+const FooterLink = styled.a`
+  color: #63b3ed;
+  text-decoration: none;
+  margin: 0 0.5rem;
 
-const PricingPrice = styled.div`
-  font-size: 3rem;
-  font-weight: 700;
-  color: #667eea;
-  margin-bottom: 1rem;
-
-  span {
-    font-size: 1rem;
-    color: #718096;
-  }
-`;
-
-const PricingFeatures = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-`;
-
-const PricingFeature = styled.li`
-  padding: 0.5rem 0;
-  color: #4a5568;
-
-  &:before {
-    content: '✓ ';
-    color: #48bb78;
-    font-weight: 600;
+  &:hover {
+    text-decoration: underline;
   }
 `;
 
@@ -211,7 +157,7 @@ function LandingPage() {
   return (
     <Container>
       <Header>
-        <Logo>SEO Checker Pro</Logo>
+        <Logo>SEO Tech Check</Logo>
         <Nav>
           <NavButton to="/login">Login</NavButton>
           <NavButton to="/register" primary="true">Get Started</NavButton>
@@ -222,11 +168,13 @@ function LandingPage() {
         <HeroTitle>Analyze Your Website's SEO Performance</HeroTitle>
         <HeroSubtitle>
           Get comprehensive insights into your website's search engine optimization 
-          with our advanced SEO analysis tool. Check meta tags, performance, 
+          with SEO Tech Check's advanced analysis tool. Check meta tags, performance, 
           mobile-friendliness, and more.
         </HeroSubtitle>
         <CTAButton to="/register">Start Free Trial</CTAButton>
       </Hero>
+
+      <SEOAnalyzer />
 
       <Features>
         <FeaturesContainer>
@@ -289,61 +237,14 @@ function LandingPage() {
         </FeaturesContainer>
       </Features>
 
-      <Pricing>
-        <FeaturesContainer>
-          <SectionTitle>Choose Your Plan</SectionTitle>
-          <PricingGrid>
-            <PricingCard>
-              <PricingTitle>Free</PricingTitle>
-              <PricingPrice>$0<span>/month</span></PricingPrice>
-              <PricingFeatures>
-                <PricingFeature>5 SEO checks per day</PricingFeature>
-                <PricingFeature>Basic SEO analysis</PricingFeature>
-                <PricingFeature>Meta tags & headings check</PricingFeature>
-                <PricingFeature>Mobile-friendliness test</PricingFeature>
-                <PricingFeature>JSON export</PricingFeature>
-              </PricingFeatures>
-              <NavButton to="/register" primary="true" style={{ width: '100%' }}>
-                Start Free
-              </NavButton>
-            </PricingCard>
-
-            <PricingCard featured>
-              <PricingBadge>Most Popular</PricingBadge>
-              <PricingTitle>Pro</PricingTitle>
-              <PricingPrice>$29<span>/month</span></PricingPrice>
-              <PricingFeatures>
-                <PricingFeature>100 SEO checks per day</PricingFeature>
-                <PricingFeature>Advanced SEO analysis</PricingFeature>
-                <PricingFeature>Screenshot capture</PricingFeature>
-                <PricingFeature>Link validation</PricingFeature>
-                <PricingFeature>Performance metrics</PricingFeature>
-                <PricingFeature>PDF & JSON export</PricingFeature>
-                <PricingFeature>Priority support</PricingFeature>
-              </PricingFeatures>
-              <NavButton to="/register" primary="true" style={{ width: '100%' }}>
-                Start Pro Trial
-              </NavButton>
-            </PricingCard>
-
-            <PricingCard>
-              <PricingTitle>Enterprise</PricingTitle>
-              <PricingPrice>$99<span>/month</span></PricingPrice>
-              <PricingFeatures>
-                <PricingFeature>Unlimited SEO checks</PricingFeature>
-                <PricingFeature>All Pro features</PricingFeature>
-                <PricingFeature>API access</PricingFeature>
-                <PricingFeature>Custom reports</PricingFeature>
-                <PricingFeature>White-label options</PricingFeature>
-                <PricingFeature>Dedicated support</PricingFeature>
-              </PricingFeatures>
-              <NavButton to="/register" primary="true" style={{ width: '100%' }}>
-                Contact Sales
-              </NavButton>
-            </PricingCard>
-          </PricingGrid>
-        </FeaturesContainer>
-      </Pricing>
+      <Footer>
+        <p>© 2024 SEO Tech Check. All rights reserved.</p>
+        <p>
+          <FooterLink href="/privacy-policy">Privacy Policy</FooterLink> |{' '}
+          <FooterLink href="/terms-of-service">Terms of Service</FooterLink> |{' '}
+          <FooterLink href="/contact">Contact</FooterLink>
+        </p>
+      </Footer>
     </Container>
   );
 }

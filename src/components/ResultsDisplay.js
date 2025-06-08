@@ -125,6 +125,9 @@ function ResultsDisplay({ results, url }) {
     // Results table
     const tableData = [];
     Object.entries(results).forEach(([category, checks]) => {
+      if (['crawlability', 'socialMedia', 'accessibility', 'other'].includes(category)) {
+        return; // Skip these categories
+      }
       checks.forEach(check => {
         tableData.push([
           category.charAt(0).toUpperCase() + category.slice(1),
@@ -148,6 +151,10 @@ function ResultsDisplay({ results, url }) {
 
   const score = calculateScore();
 
+  const filteredResults = Object.fromEntries(
+    Object.entries(results).filter(([key]) => !['crawlability', 'socialMedia', 'accessibility', 'other', 'indexability', 'performance', 'mobile'].includes(key))
+  );
+
   return (
     <ResultsContainer>
       <Header>
@@ -167,7 +174,7 @@ function ResultsDisplay({ results, url }) {
       <Section>
         <SectionTitle>Meta Tags</SectionTitle>
         <ChecksList>
-                    {results.metaTags?.map((check, index) => (
+          {filteredResults.metaTags?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
@@ -182,24 +189,16 @@ function ResultsDisplay({ results, url }) {
         </ChecksList>
       </Section>
 
-      <Section>
-        <SectionTitle>Social Media</SectionTitle>
-        <ChecksList>
-          {results.socialMedia?.map((check, index) => (
-            <CheckItem key={index} check={check} />
-          ))}
-        </ChecksList>
-      </Section>
+      {/* Removed Social Media section as per user request */}
 
-      <Section>
+      {/* <Section>
         <SectionTitle>Indexability</SectionTitle>
         <ChecksList>
           {results.indexability?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
-      </Section>
-
+      </Section> */}
       <Section>
         <SectionTitle>Structured Data</SectionTitle>
         <ChecksList>
@@ -208,25 +207,22 @@ function ResultsDisplay({ results, url }) {
           ))}
         </ChecksList>
       </Section>
-
-      <Section>
+      {/* <Section>
         <SectionTitle>Performance</SectionTitle>
         <ChecksList>
           {results.performance?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
-      </Section>
-
-      <Section>
+      </Section> */}
+      {/* <Section>
         <SectionTitle>Mobile Friendliness</SectionTitle>
         <ChecksList>
           {results.mobile?.map((check, index) => (
             <CheckItem key={index} check={check} />
           ))}
         </ChecksList>
-      </Section>
-
+      </Section> */}
       <Section>
         <SectionTitle>Images</SectionTitle>
         <ChecksList>
@@ -235,7 +231,6 @@ function ResultsDisplay({ results, url }) {
           ))}
         </ChecksList>
       </Section>
-
       <Section>
         <SectionTitle>Links</SectionTitle>
         <ChecksList>
