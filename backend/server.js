@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
-const puppeteer = require('puppeteer');
+const { chromium } = require('@playwright/browser-chromium');
 const axios = require('axios');
 const robots = require('robots-parser');
 const { URL } = require('url');
@@ -127,13 +127,12 @@ app.post('/api/analyze', protect, async (req, res) => {
       });
     }
 
-    // Launch Puppeteer
-    console.log('Launching Puppeteer...');
+    // Launch Chromium with Playwright
+    console.log('Launching Chromium with Playwright...');
     let browser;
     try {
-      browser = await puppeteer.launch({
-        headless: 'new',
-        executablePath: process.env.CHROME_BIN || undefined,
+      browser = await chromium.launch({
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -145,23 +144,21 @@ app.post('/api/analyze', protect, async (req, res) => {
           '--disable-extensions',
           '--disable-software-rasterizer'
         ],
-        ignoreDefaultArgs: ['--disable-extensions'],
       });
-    } catch (puppeteerError) {
-      console.error('Puppeteer launch error:', puppeteerError);
+    } catch (playwrightError) {
+      console.error('Chromium launch error:', playwrightError);
       return res.status(500).json({ 
         success: false,
         error: 'Failed to launch browser. Please try again later.' 
       });
     }
 
-    const page = await browser.newPage();
-    
-    // Set realistic viewport
-    await page.setViewport({ width: 1366, height: 768 });
-    
-    // Set user agent
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 SEOChecker/1.0');
+    const context = await browser.newContext({
+      viewport: { width: 1366, height: 768 },
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 SEOChecker/1.0'
+    });
+
+    const page = await context.newPage();
 
     // Set timeout
     page.setDefaultTimeout(30000);
@@ -171,7 +168,7 @@ app.post('/api/analyze', protect, async (req, res) => {
       metrics: {},
       resources: []
     };
-    
+
     // Monitor network requests and track redirect chains
     const redirectChains = new Map();
 
@@ -195,18 +192,18 @@ app.post('/api/analyze', protect, async (req, res) => {
     // Navigate to the URL
     console.log('Navigating to URL...');
     const startTime = Date.now();
-    
+
     try {
       await page.goto(url, {
-        waitUntil: 'networkidle2',
+        waitUntil: 'networkidle',
         timeout: 30000
       });
     } catch (navError) {
       console.error('Navigation error:', navError);
       await browser.close();
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Failed to load the webpage. Please check the URL and try again.' 
+        error: 'Failed to load the webpage. Please check the URL and try again.'
       });
     }
 
@@ -215,7 +212,7 @@ app.post('/api/analyze', protect, async (req, res) => {
     // Get rendered HTML
     console.log('Getting page content...');
     const html = await page.content();
-    
+
     // Get page title
     const pageTitle = await page.title();
 
@@ -224,11 +221,11 @@ app.post('/api/analyze', protect, async (req, res) => {
     if (req.user.plan !== 'free') {
       console.log('Taking screenshot...');
       try {
-        screenshot = await page.screenshot({ 
-          encoding: 'base64',
-          fullPage: false,
+        screenshot = await page.screenshot({
           type: 'jpeg',
-          quality: 80
+          quality: 80,
+          fullPage: false,
+          encoding: 'base64'
         });
       } catch (screenshotError) {
         console.error('Screenshot error:', screenshotError);
