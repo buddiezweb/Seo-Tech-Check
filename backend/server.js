@@ -26,7 +26,7 @@ mongoose.set('debug', true);
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://seo-tech-check-01-x44ae.ondigitalocean.app/'
+  'https://seo-tech-check-01-x44ae.ondigitalocean.app'
 ];
 
 // CORS Configuration - Allow only specific origins with credentials
