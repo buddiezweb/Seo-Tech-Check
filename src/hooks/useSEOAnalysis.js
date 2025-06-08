@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react';
+import axios from 'axios';
 import { runAllChecks } from '../utils/seoChecks'; // Ensure this utility function is correctly implemented
+import API_URL from '../config';
 
 function useSEOAnalysis() {
   const [results, setResults] = useState(null);
@@ -29,20 +31,19 @@ function useSEOAnalysis() {
 
       const url = urlObj.href;
 
-      // Fetch page HTML content via scrape.do API to bypass Cloudflare
-      const scrapeDoUrl = `http://api.scrape.do?token=1048c4342ada4e9ca4f82c0288bff93c37902a5dff4&url=${encodeURIComponent(url)}`;
-      const response = await fetch(scrapeDoUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch the webpage via scrape.do. Please check the URL and try again.');
+      // Call backend API analyze endpoint instead of external scrape.do API
+      const response = await axios.post(`${API_URL}/api/analyze`, { url });
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to analyze the webpage. Please check the URL and try again.');
       }
 
-      const html = await response.text();
+      const analysisData = response.data.data;
 
-      // Parse the HTML content
+      // Run all SEO checks with available data (assuming analysisData.html contains the HTML content)
       const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+      const doc = parser.parseFromString(analysisData.html, 'text/html');
 
-      // Run all SEO checks with available data
       const checkResults = await runAllChecks(doc, url);
       console.log("Fetched Results:", checkResults); // Log the results for debugging
       setResults(checkResults);
