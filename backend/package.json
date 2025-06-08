@@ -23,7 +23,8 @@
     "lighthouse": "^12.6.0",
     "mongoose": "^8.15.1",
     "puppeteer": "^24.10.0",
-    "robots-parser": "^3.0.1"
+    "robots-parser": "^3.0.1",
+    "chromium-browser": "^1.0.0"
   },
   "keywords": []
 }
