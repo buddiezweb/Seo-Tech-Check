@@ -37,7 +37,10 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      const err = new Error('Not allowed by CORS');
+      err.status = 403;
+      err.allowedOrigins = allowedOrigins;
+      callback(err);
     }
   },
   credentials: true,
@@ -599,6 +602,13 @@ app.use((req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server Error:', err);
+  if (err.message === 'Not allowed by CORS' && err.allowedOrigins) {
+    return res.status(err.status || 403).json({
+      success: false,
+      error: err.message,
+      allowedOrigins: err.allowedOrigins
+    });
+  }
   res.status(err.status || 500).json({
     success: false,
     error: err.message || 'Server Error',
